@@ -29,8 +29,8 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         "Floorbit",
                         style: TextStyle(
                           fontSize: 22,
@@ -38,11 +38,13 @@ class HomeScreen extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, color: Colors.orange),
-                      ),
-                    ],
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, '/profile_management'),
+                        child: const CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person, color: Colors.orange),
+                          ),
+                      )],
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -56,8 +58,8 @@ class HomeScreen extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Row(
-                      children: const [
+                    child: const Row(
+                      children: [
                         Expanded(
                           child: Text(
                             "What would you like to do today?",
@@ -88,7 +90,7 @@ class HomeScreen extends StatelessWidget {
               icon: Icons.calendar_month,
               title: "Book Appointment",
               subtitle: "Schedule a consultation with experts",
-              onTap: () {},
+              onTap: () => Navigator.pushNamed(context, '/book_appointment'),
             ),
             _ActionCard(
               icon: Icons.local_shipping,
