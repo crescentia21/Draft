@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'profile_edit_screen.dart';
 import 'package:version0/models/user_profile.dart';
 
-
 class ProfileManagementScreen extends StatefulWidget {
   const ProfileManagementScreen({super.key});
 
@@ -14,8 +13,9 @@ class ProfileManagementScreen extends StatefulWidget {
 }
 
 class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
-  Map<String, dynamic>? profile;
+  UserProfile? profile;
   final user = FirebaseAuth.instance.currentUser;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -25,13 +25,29 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
 
   Future<void> _loadProfile() async {
     if (user == null) return;
+
     final doc = await FirebaseFirestore.instance
         .collection('profiles')
         .doc(user!.uid)
         .get();
-    if (doc.exists) {
+
+    if (doc.exists && doc.data() != null) {
       setState(() {
-        profile = doc.data();
+        profile = UserProfile.fromMap(doc.data()!);
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        // Initialize empty profile if not exists
+        profile = UserProfile(
+          fullName: '',
+          phone: '',
+          street: '',
+          city: '',
+          state: '',
+          zip: '',
+        );
+        isLoading = false;
       });
     }
   }
@@ -39,24 +55,32 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
   @override
   Widget build(BuildContext context) {
     const themeColor = Color(0xFFFF9800);
+
     return Scaffold(
-      backgroundColor: Colors.grey,
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         backgroundColor: themeColor,
         title: const Text("Profile Management"),
         centerTitle: true,
         actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CustEditProfileScreen()),
-            ),
-            icon: const Icon(Icons.edit, color: Colors.white, size: 18),
-            label: const Text("Edit", style: TextStyle(color: Colors.white)),
-          )
+          if (!isLoading && profile != null)
+            TextButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileEditScreen(profile: profile!),
+                  ),
+                );
+                // Refresh profile after edit
+                _loadProfile();
+              },
+              icon: const Icon(Icons.edit, color: Colors.white, size: 18),
+              label: const Text("Edit", style: TextStyle(color: Colors.white)),
+            )
         ],
       ),
-      body: profile == null
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               child: Column(
@@ -71,11 +95,11 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                           icon: Icons.person_outline,
                           iconColor: Colors.orange,
                           children: [
-                            _buildInfoRow("Full Name", profile!['fullName']),
+                            _buildInfoRow("Full Name", profile!.fullName),
                             _buildInfoRow("Email Address", user!.email!,
                                 icon: Icons.email_outlined,
                                 subtext: "Email cannot be changed"),
-                            _buildInfoRow("Phone Number", profile!['phone'],
+                            _buildInfoRow("Phone Number", profile!.phone,
                                 icon: Icons.phone_outlined),
                           ],
                         ),
@@ -85,10 +109,10 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
                           icon: Icons.location_on_outlined,
                           iconColor: Colors.orange[800]!,
                           children: [
-                            _buildInfoRow("Street", profile!['street']),
-                            _buildInfoRow("City", profile!['city']),
-                            _buildInfoRow("State", profile!['state']),
-                            _buildInfoRow("ZIP Code", profile!['zip']),
+                            _buildInfoRow("Street", profile!.street),
+                            _buildInfoRow("City", profile!.city),
+                            _buildInfoRow("State", profile!.state),
+                            _buildInfoRow("ZIP Code", profile!.zip),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -115,19 +139,21 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
             child: const Icon(Icons.person, size: 60, color: Colors.white),
           ),
           const SizedBox(height: 12),
-          Text(profile!['fullName'], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(user!.email!, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+          Text(profile!.fullName,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(user!.email!,
+              style: const TextStyle(color: Colors.grey, fontSize: 14)),
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required List<Widget> children,
-  }) {
+  Widget _buildInfoCard(
+      {required String title,
+      required IconData icon,
+      required Color iconColor,
+      required List<Widget> children}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -142,7 +168,9 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
             children: [
               Icon(icon, color: iconColor, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const Divider(height: 24),
@@ -152,7 +180,8 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {IconData? icon, String? subtext}) {
+  Widget _buildInfoRow(String label, String value,
+      {IconData? icon, String? subtext}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
@@ -162,11 +191,17 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
           const SizedBox(height: 4),
           Row(
             children: [
-              if (icon != null) ...[Icon(icon, size: 16, color: Colors.grey), const SizedBox(width: 8)],
-              Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: Colors.grey),
+                const SizedBox(width: 8)
+              ],
+              Text(value,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
             ],
           ),
-          if (subtext != null) Text(subtext, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+          if (subtext != null)
+            Text(subtext,
+                style: const TextStyle(color: Colors.grey, fontSize: 11)),
         ],
       ),
     );
@@ -183,7 +218,8 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Account Actions", style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text("Account Actions",
+              style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           _actionButton("Change Password", Colors.black87, onPressed: () {
             // TODO: implement change password
@@ -197,7 +233,8 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen> {
     );
   }
 
-  Widget _actionButton(String label, Color color, {required VoidCallback onPressed}) {
+  Widget _actionButton(String label, Color color,
+      {required VoidCallback onPressed}) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),

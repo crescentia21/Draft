@@ -10,6 +10,7 @@ class HomeScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Header Section
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
@@ -45,7 +46,7 @@ class HomeScreen extends StatelessWidget {
                           backgroundColor: Colors.white,
                           child: Icon(Icons.person, color: Colors.orange),
                         ),
-                      )
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -75,7 +76,10 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
+
+            // Action Cards
             _ActionCard(
               icon: Icons.store,
               title: "Browse Products",
@@ -90,9 +94,9 @@ class HomeScreen extends StatelessWidget {
             ),
             _ActionCard(
               icon: Icons.calendar_month,
-              title: "Book Appointment",
-              subtitle: "Schedule a consultation with experts",
-              onTap: () => Navigator.pushNamed(context, '/book_appointment'),
+              title: "Appointments",
+              subtitle: "Book or view appointments",
+              onTap: () => Navigator.pushNamed(context, '/appointments_menu'),
             ),
             _ActionCard(
               icon: Icons.local_shipping,
@@ -100,13 +104,15 @@ class HomeScreen extends StatelessWidget {
               subtitle: "Monitor your delivery status",
               onTap: () => Navigator.pushNamed(context, '/orderhistory'),
             ),
+
             const SizedBox(height: 80),
           ],
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.orange,
-        onPressed: () {},
+        onPressed: () => Navigator.pushNamed(context, '/cart'), // Example: if you have a cart route
         child: const Icon(Icons.shopping_cart),
       ),
     );
@@ -144,8 +150,7 @@ class _ActionCard extends StatelessWidget {
             ),
             child: Icon(icon, color: Colors.orange),
           ),
-          title:
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text(subtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: onTap,

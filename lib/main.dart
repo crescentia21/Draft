@@ -7,6 +7,8 @@ import 'home_screen.dart';
 import 'product_catalogue_page.dart';
 import 'profile_management_screen.dart';
 import 'book_appointment_screen.dart';
+import 'view_appointment_screen.dart';
+import 'appointment_screen.dart';
 import 'AI_screeen.dart';
 import 'orderhistory.dart';
 
@@ -36,7 +38,9 @@ class FloorbitApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/products': (context) => const ProductCataloguePage(),
         '/profile_management': (context) => const ProfileManagementScreen(),
-        '/book_appointment': (context) => const CustBookAppointmentScreen(),
+        '/appointments_menu': (context) => const AppointmentMenuScreen(), // NEW
+        '/book_appointment': (context) => const CustBookAppointmentScreen(), // NEW
+        '/view_appointments': (context) => const ViewAppointmentsScreen(), // NEW
         '/ai': (context) => const GeminiChatApp(),
         '/orderhistory': (context) => const TrackOrdersScreen(),
       },
