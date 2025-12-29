@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:version0/book_appointment_screen.dart';
-import 'package:version0/profile_management_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'welcome_screen.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 import 'product_catalogue_page.dart';
+import 'profile_management_screen.dart';
+import 'book_appointment_screen.dart';
 import 'AI_screeen.dart';
 import 'orderhistory.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const FloorbitApp());
 }
 
@@ -35,7 +38,7 @@ class FloorbitApp extends StatelessWidget {
         '/profile_management': (context) => const ProfileManagementScreen(),
         '/book_appointment': (context) => const CustBookAppointmentScreen(),
         '/ai': (context) => const GeminiChatApp(),
-        '/orderhistory': (context) => const TrackOrdersScreen()
+        '/orderhistory': (context) => const TrackOrdersScreen(),
       },
     );
   }

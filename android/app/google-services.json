@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "949777069358",
+    "project_id": "floorbit-a3b55",
+    "storage_bucket": "floorbit-a3b55.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:949777069358:android:c9084459184a941e7b36bf",
+        "android_client_info": {
+          "package_name": "com.example.versioncopy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWcNltaZaWYY0uJAYUi86Rh9pWl3j9WWs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

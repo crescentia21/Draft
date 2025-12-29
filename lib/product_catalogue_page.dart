@@ -45,7 +45,7 @@ class _ProductCataloguePageState extends State<ProductCataloguePage> {
     {
       "name": "Waterblock Pro 8.6mm",
       "price": "RM 200.00/box",
-      "tags": ["Eco", "Reusable"],
+      "tags": ["Waterproof", "Plastic-free"],
       "image": "assets/8.6mm/8.6mm.jpg",
       "type": "8mm",
       "colors": [
@@ -72,7 +72,7 @@ class _ProductCataloguePageState extends State<ProductCataloguePage> {
     {
       "name": "Waterblock XE 8mm",
       "price": "RM 150.00/box",
-      "tags": ["Biodegradable", "Eco"],
+      "tags": ["Waterproof", "Plastic-Free"],
       "image": "assets/XE/XE.jpg",
       "type": "8mm",
       "colors": [
@@ -93,7 +93,7 @@ class _ProductCataloguePageState extends State<ProductCataloguePage> {
     {
       "name": "Waterblock Pro 12.6mm Herringbone",
       "price": "RM 144.00/box",
-      "tags": ["Reusable", "Metal"],
+      "tags": ["Waterproof", "Plastic-Free"],
       "image": "assets/12.6mm/12.6mm.jpg",
       "type": "12.6mm",
       "colors": [
