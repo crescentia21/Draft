@@ -84,7 +84,7 @@ class PendingAppointmentsSection extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('appointments')
-          .where('status', isEqualTo: 'pending')
+          .where('status', isEqualTo: 'Upcoming') // <-- matches AppointmentsPage
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -115,7 +115,7 @@ class CustomersSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('customers')
+          .collection('profiles') // <-- matches CustomersPage
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -177,9 +177,7 @@ class StatCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title,
-                  style:
-                      const TextStyle(color: Colors.grey)),
+              Text(title, style: const TextStyle(color: Colors.grey)),
               const SizedBox(height: 6),
               Text(
                 value,
@@ -204,8 +202,7 @@ class StatCard extends StatelessWidget {
               color: iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon,
-                color: iconColor, size: 30),
+            child: Icon(icon, color: iconColor, size: 30),
           ),
         ],
       ),
