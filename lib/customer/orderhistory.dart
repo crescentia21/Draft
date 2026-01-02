@@ -1,6 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/app_bottom_nav.dart';
 
+// ---------------------------
+// Firebase Initialization
+// ---------------------------
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyD-rpGMX0McVoCXlHe4Xzig7yJM4lYesZM",
+      authDomain: "floorbit-a3b55.firebaseapp.com",
+      projectId: "floorbit-a3b55",
+      storageBucket: "floorbit-a3b55.firebasestorage.app",
+      messagingSenderId: "949777069358",
+      appId: "1:949777069358:web:27e9e6b4fbd101ec7b36bf",
+      measurementId: "G-4QV1HM23LW",
+    ),
+  );
+  runApp(const TrackOrdersApp());
+}
+
+// ---------------------------
+// Wrapper App
+// ---------------------------
+class TrackOrdersApp extends StatelessWidget {
+  const TrackOrdersApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'FloorBit Orders',
+      theme: ThemeData(primarySwatch: Colors.orange),
+      home: const TrackOrdersScreen(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+// ---------------------------
+// Order Service
+// ---------------------------
+class OrderService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Stream<QuerySnapshot> fetchUserOrders(String userId) {
+    return _firestore
+        .collection('orders') // Make sure this matches your Firestore collection
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true)
+        .snapshots();
+  }
+}
+
+// ---------------------------
+// TrackOrdersScreen
+// ---------------------------
 class TrackOrdersScreen extends StatefulWidget {
   const TrackOrdersScreen({super.key});
 
@@ -9,70 +65,17 @@ class TrackOrdersScreen extends StatefulWidget {
 }
 
 class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
-  final List<Map<String, dynamic>> allOrders = [
-    {
-      'orderID': 'FL12345678',
-      'date': 'Dec 1, 2025',
-      'quantity': '100 boxes',
-      'productName': 'Waterblock XE - 33 Bali Teak',
-      'status': 'Installation Scheduled',
-      'statusColor': const Color(0xFFF3E5F5),
-      'statusTextColor': Colors.purple,
-      'footerLabel': 'Installation: Dec 10, 2025',
-      'price': 'RM15050.00',
-    },
-    {
-      'orderID': 'FL87654321',
-      'date': 'Nov 28, 2025',
-      'quantity': '20 boxes',
-      'productName': 'Waterblock 6mm - W6601 Blanca Roble',
-      'status': 'Completed',
-      'statusColor': const Color(0xFFE8F5E9),
-      'statusTextColor': Colors.green,
-      'footerLabel': 'Installation Complete',
-      'price': 'RM2830.00',
-    },
-    {
-      'orderID': 'FL55566677',
-      'date': 'Dec 2, 2025',
-      'quantity': '50 boxes',
-      'productName': 'Waterblock Pro 8.6mm - W02 Bianco',
-      'status': 'Quote Pending',
-      'statusColor': const Color(0xFFFFFDE7),
-      'statusTextColor': Colors.orange,
-      'footerLabel': 'Quote in progress',
-      'price': 'RM10050.00',
-    },
-  ];
-
+  final OrderService orderService = OrderService();
+  final String testUserId = 'olc6nskDG9P9TRgljOoLIOo1ggM2'; // Real userId
   List<Map<String, dynamic>> displayedOrders = [];
 
-  @override
-  void initState() {
-    super.initState();
-    displayedOrders = allOrders;
-  }
-
   void _runFilter(String enteredKeyword) {
-    List<Map<String, dynamic>> results = [];
-    if (enteredKeyword.isEmpty) {
-      results = allOrders;
-    } else {
-      results = allOrders
-          .where(
-            (order) =>
-                order["orderID"].toLowerCase().contains(
-                      enteredKeyword.toLowerCase(),
-                    ) ||
-                order["productName"].toLowerCase().contains(
-                      enteredKeyword.toLowerCase(),
-                    ),
-          )
-          .toList();
-    }
-
     setState(() {
-      displayedOrders = results;
+      displayedOrders = displayedOrders
+          .where((order) =>
+              order['orderID'].toLowerCase().contains(enteredKeyword.toLowerCase()) ||
+              order['productName'].toLowerCase().contains(enteredKeyword.toLowerCase()))
+          .toList();
     });
   }
 
@@ -115,36 +118,58 @@ class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
             const SizedBox(height: 15),
             Expanded(
-              child: displayedOrders.isNotEmpty
-                  ? ListView.builder(
-                      itemCount: displayedOrders.length,
-                      itemBuilder: (context, index) => Padding(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: orderService.fetchUserOrders(testUserId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  displayedOrders = snapshot.data!.docs
+                      .map((doc) => doc.data()! as Map<String, dynamic>)
+                      .toList();
+
+                  if (displayedOrders.isEmpty) {
+                    return const Center(child: Text('No orders found.'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: displayedOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = displayedOrders[index];
+                      return Padding(
                         padding: const EdgeInsets.only(bottom: 15.0),
                         child: OrderCard(
-                          orderID: displayedOrders[index]['orderID'],
-                          date: displayedOrders[index]['date'],
-                          quantity: displayedOrders[index]['quantity'],
-                          productName: displayedOrders[index]['productName'],
-                          status: displayedOrders[index]['status'],
-                          statusColor: displayedOrders[index]['statusColor'],
-                          statusTextColor:
-                              displayedOrders[index]['statusTextColor'],
-                          footerLabel: displayedOrders[index]['footerLabel'],
-                          price: displayedOrders[index]['price'],
+                          orderID: order['orderID'],
+                          date: order['date'],
+                          quantity: order['quantity'],
+                          productName: order['productName'],
+                          status: order['status'],
+                          statusColor: Color(int.parse(order['statusColor'])),
+                          statusTextColor: Color(int.parse(order['statusTextColor'])),
+                          footerLabel: order['footerLabel'],
+                          price: order['price'],
                         ),
-                      ),
-                    )
-                  : const Center(child: Text('No orders found.')),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
-
-      bottomNavigationBar: const AppBottomNav(currentIndex: 3), // Track Orders tab
+      bottomNavigationBar: const AppBottomNav(currentIndex: 3),
     );
   }
 }
 
+// ---------------------------
+// OrderCard Widget
+// ---------------------------
 class OrderCard extends StatelessWidget {
   final String orderID;
   final String date;
@@ -185,8 +210,7 @@ class OrderCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Order $orderID',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
