@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'widgets/app_bottom_nav.dart';
 
 class GeminiChatApp extends StatelessWidget {
   const GeminiChatApp({super.key});
@@ -29,6 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool isTyping = false;
   XFile? _selectedImage;
 
+  // Pick image from gallery
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -38,15 +40,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // --- LOGIC SECTION ---
-
+  // Send message to Gemini API
   Future<String> sendToGemini(String userMessage, XFile? image) async {
-    // PLACE YOUR API KEY HERE
-    const String apiKey = "AIzaSyDwurHHDlVZi7MQsduGU7bVLmwH8mZkqWQ";
-
-    final url = Uri.parse(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey",
-    );
+    const String apiKey = "YOUR_API_KEY_HERE"; // replace with your key
 
     List<Map<String, dynamic>> parts = [
       {"text": userMessage.isEmpty ? "What is in this image?" : userMessage},
@@ -60,15 +56,19 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     }
 
+    final Map<String, dynamic> body = {
+      "contents": [
+        {"parts": parts}
+      ]
+    };
+
     try {
       final response = await http.post(
-        url,
+        Uri.parse(
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey",
+        ),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "contents": [
-            {"parts": parts},
-          ],
-        }),
+        body: jsonEncode(body),
       );
 
       final data = jsonDecode(response.body);
@@ -120,8 +120,6 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // --- UI SECTION ---
-
   Widget typingIndicator() {
     return const Align(
       alignment: Alignment.centerLeft,
@@ -146,9 +144,7 @@ class _ChatScreenState extends State<ChatScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Column(
           mainAxisSize: MainAxisSize.min,
@@ -161,20 +157,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
                 ),
                 SizedBox(width: 8),
-                Icon(
-                  Icons.auto_awesome,
-                  size: 24,
-                ),
+                Icon(Icons.auto_awesome, size: 24),
               ],
             ),
             Text(
               "Powered by Gemini.com",
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: Colors.black54,
-                letterSpacing: 0.5,
-              ),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black54,
+                  letterSpacing: 0.5),
             ),
           ],
         ),
@@ -198,10 +190,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.symmetric(
-                      vertical: 4,
-                      horizontal: 10,
-                    ),
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width * 0.75,
                     ),
@@ -287,6 +277,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1), // AI tab
     );
   }
 }

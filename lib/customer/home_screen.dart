@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'widgets/app_bottom_nav.dart'; // make sure folder name is correct
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -10,6 +16,7 @@ class HomeScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Header Section
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
@@ -29,8 +36,8 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         "Floorbit",
                         style: TextStyle(
                           fontSize: 22,
@@ -38,9 +45,13 @@ class HomeScreen extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, color: Colors.orange),
+                      GestureDetector(
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/profile_management'),
+                        child: const CircleAvatar(
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person, color: Colors.orange),
+                        ),
                       ),
                     ],
                   ),
@@ -56,8 +67,8 @@ class HomeScreen extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Row(
-                      children: const [
+                    child: const Row(
+                      children: [
                         Expanded(
                           child: Text(
                             "What would you like to do today?",
@@ -71,7 +82,10 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
+
+            // Action Cards
             _ActionCard(
               icon: Icons.store,
               title: "Browse Products",
@@ -86,25 +100,29 @@ class HomeScreen extends StatelessWidget {
             ),
             _ActionCard(
               icon: Icons.calendar_month,
-              title: "Book Appointment",
-              subtitle: "Schedule a consultation with experts",
-              onTap: () {},
+              title: "Appointments",
+              subtitle: "Book or view appointments",
+              onTap: () => Navigator.pushNamed(context, '/appointments_menu'),
             ),
             _ActionCard(
               icon: Icons.local_shipping,
               title: "Track Orders",
               subtitle: "Monitor your delivery status",
-              onTap: () {},
+              onTap: () => Navigator.pushNamed(context, '/orderhistory'),
             ),
+
             const SizedBox(height: 80),
           ],
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.orange,
-        onPressed: () {},
+        onPressed: () => Navigator.pushNamed(context, '/cart'),
         child: const Icon(Icons.shopping_cart),
       ),
+
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0), // <-- Correct
     );
   }
 }
