@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'widgets/app_bottom_nav.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class TrackOrdersScreen extends StatefulWidget {
   const TrackOrdersScreen({super.key});
@@ -9,169 +11,143 @@ class TrackOrdersScreen extends StatefulWidget {
 }
 
 class _TrackOrdersScreenState extends State<TrackOrdersScreen> {
-  final List<Map<String, dynamic>> allOrders = [
-    {
-      'orderID': 'FL12345678',
-      'date': 'Dec 1, 2025',
-      'quantity': '100 boxes',
-      'productName': 'Waterblock XE - 33 Bali Teak',
-      'status': 'Installation Scheduled',
-      'statusColor': const Color(0xFFF3E5F5),
-      'statusTextColor': Colors.purple,
-      'footerLabel': 'Installation: Dec 10, 2025',
-      'price': 'RM15050.00',
-    },
-    {
-      'orderID': 'FL87654321',
-      'date': 'Nov 28, 2025',
-      'quantity': '20 boxes',
-      'productName': 'Waterblock 6mm - W6601 Blanca Roble',
-      'status': 'Completed',
-      'statusColor': const Color(0xFFE8F5E9),
-      'statusTextColor': Colors.green,
-      'footerLabel': 'Installation Complete',
-      'price': 'RM2830.00',
-    },
-    {
-      'orderID': 'FL55566677',
-      'date': 'Dec 2, 2025',
-      'quantity': '50 boxes',
-      'productName': 'Waterblock Pro 8.6mm - W02 Bianco',
-      'status': 'Quote Pending',
-      'statusColor': const Color(0xFFFFFDE7),
-      'statusTextColor': Colors.orange,
-      'footerLabel': 'Quote in progress',
-      'price': 'RM10050.00',
-    },
-  ];
-
-  List<Map<String, dynamic>> displayedOrders = [];
-
-  @override
-  void initState() {
-    super.initState();
-    displayedOrders = allOrders;
-  }
-
-  void _runFilter(String enteredKeyword) {
-    List<Map<String, dynamic>> results = [];
-    if (enteredKeyword.isEmpty) {
-      results = allOrders;
-    } else {
-      results = allOrders
-          .where(
-            (order) =>
-                order["orderID"].toLowerCase().contains(
-                      enteredKeyword.toLowerCase(),
-                    ) ||
-                order["productName"].toLowerCase().contains(
-                      enteredKeyword.toLowerCase(),
-                    ),
-          )
-          .toList();
-    }
-
-    setState(() {
-      displayedOrders = results;
-    });
-  }
+  final user = FirebaseAuth.instance.currentUser;
+  String searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
+    if (user == null) {
+      return const Center(child: Text("Not logged in"));
+    }
+
+    final ordersQuery = FirebaseFirestore.instance
+        .collection('orders')
+        .where('userId', isEqualTo: user!.uid)
+        .orderBy('timestamp', descending: true);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         title: const Text('Track Orders', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.orange,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Search by Order Number',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+            const Text(
+              'Search by Product Name',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 12),
             TextField(
-              onChanged: _runFilter,
+              onChanged: (v) => setState(() => searchQuery = v.toLowerCase()),
               decoration: InputDecoration(
-                hintText: 'Enter order number (e.g., FL12345678)',
+                hintText: 'Search product...',
                 filled: true,
                 fillColor: Colors.white,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
-            const Text('Your Orders',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 25),
+            const Text(
+              'Your Orders',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 15),
             Expanded(
-              child: displayedOrders.isNotEmpty
-                  ? ListView.builder(
-                      itemCount: displayedOrders.length,
-                      itemBuilder: (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 15.0),
-                        child: OrderCard(
-                          orderID: displayedOrders[index]['orderID'],
-                          date: displayedOrders[index]['date'],
-                          quantity: displayedOrders[index]['quantity'],
-                          productName: displayedOrders[index]['productName'],
-                          status: displayedOrders[index]['status'],
-                          statusColor: displayedOrders[index]['statusColor'],
-                          statusTextColor:
-                              displayedOrders[index]['statusTextColor'],
-                          footerLabel: displayedOrders[index]['footerLabel'],
-                          price: displayedOrders[index]['price'],
-                        ),
-                      ),
-                    )
-                  : const Center(child: Text('No orders found.')),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: ordersQuery.snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final orders = snapshot.data!.docs;
+
+                  if (orders.isEmpty) {
+                    return const Center(child: Text("No orders found."));
+                  }
+
+                  return ListView.builder(
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) {
+                      final data =
+                          orders[index].data() as Map<String, dynamic>;
+
+                      final items =
+                          (data['items'] as List<dynamic>? ?? []);
+                      final status = data['status'] ?? 'pending';
+                      final total =
+                          (data['total'] as num?)?.toDouble() ?? 0.0;
+                      final timestamp =
+                          (data['timestamp'] as Timestamp).toDate();
+
+                      // total quantity (SAFE)
+                      final totalQty = items.fold<int>(
+                        0,
+                        (sum, item) =>
+                            sum +
+                            ((item['quantity'] as num?)?.toInt() ?? 0),
+                      );
+
+                      return OrderCard(
+                        items: items,
+                        totalQty: totalQty,
+                        total: total,
+                        status: status,
+                        date: DateFormat('dd MMM yyyy').format(timestamp),
+                        searchQuery: searchQuery,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
-
-      bottomNavigationBar: const AppBottomNav(currentIndex: 3), // Track Orders tab
     );
   }
 }
 
+/* ============================================================
+   ORDER CARD
+============================================================ */
+
 class OrderCard extends StatelessWidget {
-  final String orderID;
-  final String date;
-  final String quantity;
-  final String productName;
+  final List<dynamic> items;
+  final int totalQty;
+  final double total;
   final String status;
-  final Color statusColor;
-  final Color statusTextColor;
-  final String footerLabel;
-  final String price;
+  final String date;
+  final String searchQuery;
 
   const OrderCard({
     super.key,
-    required this.orderID,
-    required this.date,
-    required this.quantity,
-    required this.productName,
+    required this.items,
+    required this.totalQty,
+    required this.total,
     required this.status,
-    required this.statusColor,
-    required this.statusTextColor,
-    required this.footerLabel,
-    required this.price,
+    required this.date,
+    required this.searchQuery,
   });
+
+  Color get statusColor =>
+      status == 'complete' ? Colors.green.shade100 : Colors.orange.shade100;
+
+  Color get statusTextColor =>
+      status == 'complete' ? Colors.green : Colors.orange;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -181,39 +157,92 @@ class OrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // HEADER
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Order $orderID',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                date,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(status, style: TextStyle(color: statusTextColor, fontSize: 12)),
+                child: Text(
+                  status.toUpperCase(),
+                  style: TextStyle(
+                    color: statusTextColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(date, style: const TextStyle(color: Colors.grey)),
-          Text(quantity, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 10),
-          Text(productName, style: const TextStyle(fontWeight: FontWeight.w500)),
-          const Divider(height: 30),
+          const SizedBox(height: 12),
+
+          // PRODUCTS
+          ...items.map((item) {
+            final productId = item['productId'];
+            final qty = ((item['quantity'] as num?)?.toInt() ?? 0);
+
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('products')
+                  .doc(productId)
+                  .get(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox();
+
+                final productData =
+                    snapshot.data!.data() as Map<String, dynamic>?;
+                final productName =
+                    productData?['name'] ?? 'Unknown Product';
+
+                if (searchQuery.isNotEmpty &&
+                    !productName
+                        .toLowerCase()
+                        .contains(searchQuery)) {
+                  return const SizedBox();
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    "$productName  × $qty",
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                );
+              },
+            );
+          }),
+
+          const Divider(height: 28),
+
+          // FOOTER
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(footerLabel, style: const TextStyle(color: Colors.grey)),
-              Text(price,
-                  style: const TextStyle(
-                      color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                "Total Items: $totalQty",
+                style: const TextStyle(color: Colors.grey),
+              ),
+              Text(
+                "RM ${total.toStringAsFixed(2)}",
+                style: const TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
         ],
       ),
     );
   }
-}
+} 
